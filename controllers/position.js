@@ -1,15 +1,11 @@
 const Position = require('../models/Position');
 
-exports.addPosition = (req, res, next) => {
-    const position = new Position({
-        ...req.body
+exports.addPositions = (req, res, next) => {
+    Position.insertMany(req.body.positions, {ordered: false}).then(() => {
+        res.status(200).json({ message: 'Positions inserted'})
+    }).catch((error)=>{
+        res.status(400).json(error)
     });
-    position.save()
-        .then((position) => {
-
-            res.status(201).json(position)
-        })
-        .catch(error => res.status(400).json({ error }));
 };
 
 exports.updatePosition = (req, res, next) => {
