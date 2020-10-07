@@ -1,8 +1,10 @@
+require('dotenv').config()
+
 const googleConfig = {};
 
-googleConfig.oAuthClientID = '426494770490-knqhdab0n39hu4qpv8drc7tjfr6ua3a3.apps.googleusercontent.com';
-googleConfig.oAuthclientSecret = '_uzOH88EsriNSTrHVSYs1kaG';
-googleConfig.oAuthCallbackUrl = 'http://127.0.0.1:3000/api/external/google/callback';
+googleConfig.oAuthClientID = process.env.GOOGLE_AUTH_CLIENT_ID;
+googleConfig.oAuthclientSecret = process.env.GOOGLE_AUTH_CLIENT_SECRET;
+googleConfig.oAuthCallbackUrl = process.env.GOOGLE_AUTH_CALLBACK_URL;
 googleConfig.scopes = [
   'https://www.googleapis.com/auth/photoslibrary.readonly',
   'https://www.googleapis.com/auth/userinfo.email',

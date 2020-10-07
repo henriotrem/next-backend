@@ -1,5 +1,7 @@
 const Redis = require("redis");
-const redis = Redis.createClient({port: 6379,host: '127.0.0.1'});
+
+const redisConfig = require('../../conf/redis-config');
+const redis = Redis.createClient(redisConfig);
 
 this.indexes = function(universe, ids, callback) {
 

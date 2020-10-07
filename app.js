@@ -1,6 +1,7 @@
+require('dotenv').config()
+
 const express = require('express');
 const bodyParser = require('body-parser');
-const mongoose = require('mongoose');
 const path = require('path');
 
 const passport = require('passport');
@@ -17,14 +18,13 @@ const segmentRoutes = require('./routes/segment');
 const universeRoutes = require('./routes/universe');
 const photoRoutes = require('./routes/photo');
 
-mongoose.connect('mongodb://localhost:27017/next',
-    { useNewUrlParser: true,
-        useUnifiedTopology: true })
+const mongoose = require('mongoose');
+const mongoConfig = require('./conf/mongodb-config');
+mongoose.connect(mongoConfig.host, mongoConfig.options)
     .then(() => console.log('Connexion à MongoDB réussie !'))
     .catch(() => console.log('Connexion à MongoDB échouée !'));
 
 const app = express();
-
 
 app.use((req, res, next) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
