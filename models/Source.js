@@ -8,6 +8,7 @@ const sourceSchema = mongoose.Schema({
         email: { type: String },
         token: { type: String },
         refreshToken: { type: String },
+        callback: { type: String },
         scopes: [{ type: String }],
     },
     file: {
