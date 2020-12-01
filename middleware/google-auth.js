@@ -1,4 +1,4 @@
-const googleConfig = require('../conf/google-config.js');
+const googleConfig = require('../configuration/google-config.js');
 
 const GoogleOAuthStrategy = require('passport-google-oauth20').Strategy;
 

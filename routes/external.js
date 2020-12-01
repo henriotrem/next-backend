@@ -5,8 +5,8 @@ const externalController = require('../controllers/external');
 const auth = require('../middleware/auth');
 
 const passport = require('passport');
-const googleConfig = require('../conf/google-config.js');
-const spotifyConfig = require('../conf/spotify-config.js');
+const googleConfig = require('../configuration/google-config.js');
+const spotifyConfig = require('../configuration/spotify-config.js');
 
 router.get('/google', (req, res) => {
 

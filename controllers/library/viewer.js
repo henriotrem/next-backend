@@ -1,6 +1,6 @@
 const Redis = require("redis");
 
-const redisConfig = require('../../conf/redis-config');
+const redisConfig = require('../../configuration/redis-config');
 const redis = Redis.createClient(redisConfig);
 
 this.indexes = function(universe, ids, callback) {

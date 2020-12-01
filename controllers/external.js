@@ -1,6 +1,6 @@
 const request = require('request-promise');
-const googleConfig = require('../conf/google-config');
-const spotifyConfig = require('../conf/spotify-config');
+const googleConfig = require('../configuration/google-config');
+const spotifyConfig = require('../configuration/spotify-config');
 
 const Source = require('../models/Source');
 

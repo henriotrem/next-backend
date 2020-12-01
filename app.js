@@ -23,7 +23,7 @@ const websiteRoutes = require('./routes/website');
 const universeRoutes = require('./routes/universe');
 
 const mongoose = require('mongoose');
-const mongoConfig = require('./conf/mongodb-config');
+const mongoConfig = require('./configuration/mongodb-config');
 mongoose.connect(mongoConfig.host, mongoConfig.options)
     .then(() => console.log('Connexion à MongoDB réussie !'))
     .catch(() => console.log('Connexion à MongoDB échouée !'));

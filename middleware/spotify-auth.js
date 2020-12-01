@@ -1,4 +1,4 @@
-const spotifyConfig = require('../conf/spotify-config.js');
+const spotifyConfig = require('../configuration/spotify-config.js');
 
 const SpotifyStrategy = require('passport-spotify').Strategy;
 
