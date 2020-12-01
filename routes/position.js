@@ -5,10 +5,8 @@ const positionController = require('../controllers/position');
 const auth = require('../middleware/auth');
 
 router.post('/', auth, positionController.addPositions);
-router.put('/:id', auth, positionController.updatePosition);
 router.put('/', auth, positionController.updatePositions);
-router.delete('/:id', auth, positionController.deletePosition);
-router.get('/:ids', auth, positionController.getPositions);
-router.get('/', auth, positionController.getAllPositions);
+router.delete('/', auth, positionController.deletePositions);
+router.get('/', auth, positionController.getPositions);
 
 module.exports = router;

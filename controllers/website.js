@@ -1,17 +1,17 @@
-const Position = require('../models/Position');
+const Website = require('../models/Website');
 
-exports.addPositions = (req, res) => {
+exports.addWebsites = (req, res) => {
 
-    let positions = req.body.positions;
+    let websites = req.body.websites;
 
-    positions.map(obj=> ({ ...obj, userId: req.params.userId }));
+    websites.map(obj=> ({ ...obj, userId: req.params.userId }));
 
-    Position.insertMany(positions, {ordered: false})
-        .then(() => res.status(200).json({ message: 'Positions inserted'}))
+    Website.insertMany(req.body.websites, {ordered: false})
+        .then(() => res.status(200).json({ message: 'Websites inserted'}))
         .catch((error)=>res.status(400).json(error));
 };
 
-exports.updatePositions = (req, res) => {
+exports.updateWebsites = (req, res) => {
     const filter = {
         userId:req.params.userId,
         ...req.body.filter
@@ -20,12 +20,12 @@ exports.updatePositions = (req, res) => {
         ...req.body.set
     };
 
-    Position.update(filter, set, { multi: true })
-        .then((positions) => res.status(200).json({ positions: positions, message: 'Positions updated' }))
+    Website.update(filter, set, { multi: true })
+        .then((websites) => res.status(200).json({ websites: websites, message: 'Websites updated' }))
         .catch(error => res.status(400).json(error));
 };
 
-exports.deletePositions = (req, res) => {
+exports.deleteWebsites = (req, res) => {
 
     let filter = {
         userId: req.params.userId
@@ -45,12 +45,12 @@ exports.deletePositions = (req, res) => {
         }
     }
 
-    Position.deleteMany(filter)
-        .then(() => res.status(200).json({ message: 'Position deleted' }))
+    Website.deleteMany(filter)
+        .then(() => res.status(200).json({ message: 'Website deleted' }))
         .catch(error => res.status(400).json(error));
 };
 
-exports.getPositions = (req, res) => {
+exports.getWebsites = (req, res) => {
 
     let filter = {
         userId: req.params.userId
@@ -70,7 +70,7 @@ exports.getPositions = (req, res) => {
         }
     }
 
-    Position.find(filter)
-        .then(positions => res.status(200).json(positions))
+    Website.find(filter)
+        .then(websites => res.status(200).json(websites))
         .catch(error => res.status(404).json(error));
 }

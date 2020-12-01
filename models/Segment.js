@@ -16,7 +16,7 @@ const segmentSchema = mongoose.Schema({
         longitude: { type: Number },
         timestamp: { type: Number}
     } ]
-});
+}, { timestamps: true });
 
 segmentSchema.index({userId:1, 'duration.start': 1}, {unique: true});
 

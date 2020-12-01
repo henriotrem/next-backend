@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 
 const positionSchema = mongoose.Schema({
     userId: { type: mongoose.ObjectId, ref: 'User', required: true },
-    sourceId: { type: mongoose.ObjectId },
+    sourceId: { type: mongoose.ObjectId, ref: 'Source', required: true },
     geospatiality: {
         latitude: {type: Number},
         longitude: {type: Number},
@@ -12,6 +12,7 @@ const positionSchema = mongoose.Schema({
 }, { timestamps: true });
 
 positionSchema.index({userId:1, temporality: 1}, {unique: true});
+positionSchema.index({userId:1, sourceId:1, temporality: 1});
 positionSchema.index({userId:1, createdAt: 1});
 
 module.exports = mongoose.model('Position', positionSchema);

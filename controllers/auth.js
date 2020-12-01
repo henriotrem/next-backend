@@ -1,27 +1,26 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const request = require('request-promise');
-const config = require('../conf/google-config')
 
-const User = require('../models/User');
-const Service = require('../models/Service');
+const Auth = require('../models/User');
 
-exports.signUp = (req, res, next) => {
+exports.signUp = (req, res) => {
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
-            const user = new User({
+            const user = new Auth({
+                firstname: req.body.firstname,
+                lastname: req.body.lastname,
                 email: req.body.email,
                 password: hash
             });
             user.save()
-                .then(() => res.status(201).json({ message : 'User created'}))
+                .then(() => res.status(201).json({ message : 'Auth created'}))
                 .catch(error => res.status(400).json({ error }));
         })
         .catch(error => res.status(500).json({ error}));
 };
 
-exports.logIn = (req, res, next) => {
-    User.findOne({email : req.body.email})
+exports.logIn = (req, res) => {
+    Auth.findOne({email : req.body.email})
         .then(user => {
             if(!user) {
                 return res.status(401).json({ error : 'Unknown user'})
@@ -37,11 +36,19 @@ exports.logIn = (req, res, next) => {
                             { userId: user._id },
                             'RANDOM_TOKEN_SECRET',
                             { expiresIn: '24h'}
-                        )
+                        ),
+                        expiresIn: 3600*24
                     });
                 })
-                .catch(error => res.status(500).json({ error }));
+                .catch(error => res.status(400).json(error));
         })
-        .catch(error => res.status(500).json({ error }));
+        .catch(error => res.status(400).json(error));
 
 };
+
+exports.getAccount = (req, res) => {
+
+    Auth.findOne({_id : req.params.userId})
+        .then((user) => res.status(200).json(user))
+        .catch(error => res.status(400).json(error));
+}

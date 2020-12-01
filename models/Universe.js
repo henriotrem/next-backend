@@ -13,6 +13,6 @@ const universeSchema = mongoose.Schema({
     }],
     precision: { type: Number, required: true },
     limit: { type: Number, required: true }
-})
+}, { timestamps: true });
 
 module.exports = mongoose.model('Universe', universeSchema);

@@ -4,17 +4,17 @@ const User = require('../models/User');
 
 const geospatiality = require("./library/dimensions/geospatiality");
 
-exports.createSegments = (req, res, next) => {
+exports.createSegments = (req, res) => {
 
-    User.updateOne({'_id':req.body.userId}, { $set: { 'segments.inProgress' : true } } ).then(
+    User.updateOne({'_id':req.params.userId}, { $set: { 'segments.inProgress' : true } } ).then(
         (result) => {
 
             if(result.nModified || true) {
 
-                User.findOne({'_id':req.body.userId}).then(
+                User.findOne({'_id':req.params.userId}).then(
                     (user)=> {
 
-                        Position.findOne({'userId':req.body.userId}).sort({'createdAt':-1}).limit(1)
+                        Position.findOne({'userId':req.params.userId}).sort({'createdAt':-1}).limit(1)
                             .then(
                                 (position) => {
 
@@ -24,7 +24,12 @@ exports.createSegments = (req, res, next) => {
                                         createSegments(user._id, user.segments.updatedAt, position.createdAt, null);
                                     } else {
 
-                                        res.status(200).json({message:'Segments are already up to date'})
+                                        User.updateOne( {'_id':req.params.userId}, { $set: { 'segments.inProgress' : false } } ).then(
+                                            () => {
+
+                                                res.status(200).json({message:'Segments are already up to date'})
+                                            }
+                                        ).catch(error => console.log(error));
                                     }
 
                                 }).catch(error => res.status(404).json({ error}));
@@ -37,7 +42,6 @@ exports.createSegments = (req, res, next) => {
         }
     ).catch(error => res.status(404).json({ error}));
 };
-
 
 function createSegments(userId, minDate, maxDate, minTemporality) {
 
@@ -145,23 +149,26 @@ function createSegmentsBisBis(userId, minDate, maxDate, segment1, segment2, posi
             let velocity = distance / duration ;
 
             let serieDistance = geospatiality.pointDistance([current.geospatiality.latitude, current.geospatiality.longitude], [serie[0].geospatiality.latitude, serie[0].geospatiality.longitude]) * 1000;
-            let type = '';
+            let type = serieType;
 
-            if (serieType === 'MOVING') {
-                if(velocity < 0.4) {
-                    type = 'STILL';
+            if (!segment1 || serie[0].temporality !== segment1.duration.start || serie.length > segment1.path.length) {
+
+                if (serieType === 'MOVING') {
+                    if (velocity < 0.4) {
+                        type = 'STILL';
+                    } else {
+                        type = 'MOVING';
+                    }
                 } else {
-                    type = 'MOVING';
-                }
-            } else {
-                if((serieDistance - current.geospatiality.accuracy) > 100){
-                    type = 'MOVING';
-                } else {
-                    type = 'STILL';
+                    if ((serieDistance - current.geospatiality.accuracy) > 100) {
+                        type = 'MOVING';
+                    } else {
+                        type = 'STILL';
+                    }
                 }
             }
 
-            if(serieType !== type) {
+            if(serieType !== type ) {
 
                 saveSegment(userId, serieType, serie, serieTotalDistance, segment1, segment2);
 
@@ -218,6 +225,7 @@ function saveSegment(userId, serieType, serie, serieTotalDistance, segment1, seg
     if(segment2 && segment.duration.end === segment2.duration.end)
         segment._id = segment2._id;
 
+
     if(serieType === 'MOVING') {
 
         segment.distance = serieTotalDistance;
@@ -236,24 +244,17 @@ function saveSegment(userId, serieType, serie, serieTotalDistance, segment1, seg
         }
     }
 
-    if(segment._id) {
+    if (segment._id) {
 
         console.log('Update : ' + segment._id);
         Segment.updateOne({_id: segment._id}, segment).then().catch(error => console.log(error));
     } else {
 
-        (new Segment(segment)).save().then().catch(error=>console.log(error));
+        (new Segment(segment)).save().then().catch(error => console.log(error));
     }
 }
 
-
-exports.getSegments = (req, res, next) => {
-    Segment.find().where('_id').in(req.params.ids.split(';'))
-        .then(segments => res.status(200).json(segments))
-        .catch(error => res.status(404).json({ error}));
-}
-
-exports.getAllSegments = (req, res, next) => {
+exports.getSegments = (req, res) => {
 
     let minTime = +req.query.start;
     let maxTime = minTime + 3600*24;

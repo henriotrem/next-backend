@@ -8,10 +8,10 @@ module.exports = (passport) => {
   passport.use(new GoogleOAuthStrategy(
       {
         clientID: googleConfig.oAuthClientID,
-        clientSecret: googleConfig.oAuthclientSecret,
-        callbackURL: googleConfig.oAuthCallbackUrl,
-        // Set the correct profile URL that does not require any additional APIs
-        userProfileURL: 'https://www.googleapis.com/oauth2/v3/userinfo'
+        clientSecret: googleConfig.oAuthClientSecret,
+        callbackURL: googleConfig.oAuthCallbackUrl
       },
-      (token, refreshToken, profile, done) => done(null, {profile, token})));
+      (token, refreshToken, profile, done) => {
+          done(null, {profile, token, refreshToken})
+      }));
 };

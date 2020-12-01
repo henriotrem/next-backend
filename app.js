@@ -5,18 +5,22 @@ const bodyParser = require('body-parser');
 const path = require('path');
 
 const passport = require('passport');
-const auth = require('./middleware/google-auth');
+const googleAuth = require('./middleware/google-auth');
+const spotifyAuth = require('./middleware/spotify-auth');
 
-auth(passport);
+googleAuth(passport);
+spotifyAuth(passport);
 
-const userRoutes = require('./routes/user');
-const fileRoutes = require('./routes/file');
-const serviceRoutes = require('./routes/service');
+const authRoutes = require('./routes/auth');
+const sourceRoutes = require('./routes/source');
 const externalRoutes = require('./routes/external');
 const positionRoutes = require('./routes/position');
 const segmentRoutes = require('./routes/segment');
-const universeRoutes = require('./routes/universe');
 const photoRoutes = require('./routes/photo');
+const musicRoutes = require('./routes/music');
+const watchRoutes = require('./routes/watch');
+const websiteRoutes = require('./routes/website');
+const universeRoutes = require('./routes/universe');
 
 const mongoose = require('mongoose');
 const mongoConfig = require('./conf/mongodb-config');
@@ -40,13 +44,15 @@ app.use(bodyParser.json());
 
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
-app.use('/api/auth', userRoutes);
-app.use('/api/files', fileRoutes);
-app.use('/api/services', serviceRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/sources', sourceRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/positions', positionRoutes);
 app.use('/api/segments', segmentRoutes);
-app.use('/api/universes', universeRoutes);
 app.use('/api/photos', photoRoutes);
+app.use('/api/musics', musicRoutes);
+app.use('/api/watches', watchRoutes);
+app.use('/api/websites', websiteRoutes);
+app.use('/api/universes', universeRoutes);
 
 module.exports = app;

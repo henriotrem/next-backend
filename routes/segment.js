@@ -5,7 +5,6 @@ const segmentController = require('../controllers/segment');
 const auth = require('../middleware/auth');
 
 router.post('/', auth, segmentController.createSegments);
-router.get('/:ids', auth, segmentController.getSegments);
-router.get('/', auth, segmentController.getAllSegments);
+router.get('/', auth, segmentController.getSegments);
 
 module.exports = router;

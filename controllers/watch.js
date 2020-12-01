@@ -1,17 +1,17 @@
-const Position = require('../models/Position');
+const Watch = require('../models/Watch');
 
-exports.addPositions = (req, res) => {
+exports.addWatches = (req, res) => {
 
-    let positions = req.body.positions;
+    let watches = req.body.watches;
 
-    positions.map(obj=> ({ ...obj, userId: req.params.userId }));
+    watches.map(obj=> ({ ...obj, userId: req.params.userId }));
 
-    Position.insertMany(positions, {ordered: false})
-        .then(() => res.status(200).json({ message: 'Positions inserted'}))
+    Watch.insertMany(req.body.watches, {ordered: false})
+        .then(() => res.status(200).json({ message: 'Watches inserted'}))
         .catch((error)=>res.status(400).json(error));
 };
 
-exports.updatePositions = (req, res) => {
+exports.updateWatches = (req, res) => {
     const filter = {
         userId:req.params.userId,
         ...req.body.filter
@@ -20,12 +20,12 @@ exports.updatePositions = (req, res) => {
         ...req.body.set
     };
 
-    Position.update(filter, set, { multi: true })
-        .then((positions) => res.status(200).json({ positions: positions, message: 'Positions updated' }))
+    Watch.update(filter, set, { multi: true })
+        .then((watches) => res.status(200).json({ watches: watches, message: 'Watches updated' }))
         .catch(error => res.status(400).json(error));
 };
 
-exports.deletePositions = (req, res) => {
+exports.deleteWatches = (req, res) => {
 
     let filter = {
         userId: req.params.userId
@@ -45,12 +45,12 @@ exports.deletePositions = (req, res) => {
         }
     }
 
-    Position.deleteMany(filter)
-        .then(() => res.status(200).json({ message: 'Position deleted' }))
+    Watch.deleteMany(filter)
+        .then(() => res.status(200).json({ message: 'Watch deleted' }))
         .catch(error => res.status(400).json(error));
 };
 
-exports.getPositions = (req, res) => {
+exports.getWatches = (req, res) => {
 
     let filter = {
         userId: req.params.userId
@@ -70,7 +70,7 @@ exports.getPositions = (req, res) => {
         }
     }
 
-    Position.find(filter)
-        .then(positions => res.status(200).json(positions))
+    Watch.find(filter)
+        .then(watches => res.status(200).json(watches))
         .catch(error => res.status(404).json(error));
 }
