@@ -75,6 +75,37 @@ exports.getSources = (req, res) => {
         .catch(error => res.status(404).json(error));
 }
 
+exports.addApi = (req, res) => {
+    const filter = {
+        '_id' : req.params.id,
+        'userId': req.params.userId
+    };
+    const set = {
+        '$set' :
+            {
+                api: req.body
+            }
+    };
+    Source.findOneAndUpdate(filter,set,{ new:true, useFindAndModify: false })
+        .then((source) => res.status(201).json(source))
+        .catch(error => res.status(400).json(error));
+};
+
+exports.updateApi = (req, res) => {
+    const filter = {
+        '_id' : req.params.id,
+        'userId': req.params.userId
+    };
+    const set = {
+        $inc: {
+            "api.token": req.body.token
+        }
+    };
+    Source.updateOne(filter, set)
+        .then(() => res.status(200).json({ message: 'Api updated' }))
+        .catch(error => res.status(400).json(error));
+};
+
 exports.addFile = (req, res) => {
     const filter = {
         '_id' : req.params.id,

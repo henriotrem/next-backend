@@ -10,6 +10,9 @@ router.put('/', auth, sourceController.updateSources);
 router.delete('/', auth, sourceController.deleteSources);
 router.get('/', auth, sourceController.getSources);
 
+router.post('/:id/api', auth, sourceController.addApi);
+router.put('/:id/api', auth, sourceController.updateApi);
+
 router.post('/:id/file', auth, sourceController.addFile);
 router.put('/:id/file', auth, sourceController.updateFile);
 
