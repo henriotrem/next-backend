@@ -2,13 +2,28 @@ const Music = require('../models/Music');
 
 exports.addMusics = (req, res) => {
 
-    let musics = req.body.musics;
-
-    musics.map(obj=> ({ ...obj, userId: req.params.userId }));
+    const musics = req.body.musics.map(obj=> ({ ...obj, userId: req.params.userId }));
 
     Music.insertMany(musics, {ordered: false})
-        .then(() => res.status(200).json({ message: 'Musics inserted'}))
-        .catch((error)=>res.status(400).json(error));
+        .then((result) => {
+            const insertedIds = result.map((object, index) => ({
+                index: index,
+                _id: object._id
+            }));
+            res.status(200).json({insertedIds});
+        })
+        .catch((error) => {
+                if (error.code === 11000) {
+                    const insertedIds  = error.result.result.insertedIds.filter(
+                        (element1) => error.writeErrors.filter(
+                            (element2) => element2.index === element1.index).length === 0);
+
+                    res.status(200).json({insertedIds});
+                } else {
+                    res.status(400).json(error);
+                }
+            }
+        );
 };
 
 exports.updateMusics = (req, res) => {

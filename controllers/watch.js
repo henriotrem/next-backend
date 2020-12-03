@@ -2,13 +2,28 @@ const Watch = require('../models/Watch');
 
 exports.addWatches = (req, res) => {
 
-    let watches = req.body.watches;
+    const watches = req.body.watches.map(obj=> ({ ...obj, userId: req.params.userId }));
 
-    watches.map(obj=> ({ ...obj, userId: req.params.userId }));
+    Watch.insertMany(watches, {ordered: false})
+        .then((result) => {
+            const insertedIds = result.map((object, index) => ({
+                index: index,
+                _id: object._id
+            }));
+            res.status(200).json({insertedIds});
+        })
+        .catch((error) => {
+                if (error.code === 11000) {
+                    const insertedIds  = error.result.result.insertedIds.filter(
+                        (element1) => error.writeErrors.filter(
+                            (element2) => element2.index === element1.index).length === 0);
 
-    Watch.insertMany(req.body.watches, {ordered: false})
-        .then(() => res.status(200).json({ message: 'Watches inserted'}))
-        .catch((error)=>res.status(400).json(error));
+                    res.status(200).json({insertedIds});
+                } else {
+                    res.status(400).json(error);
+                }
+            }
+        );
 };
 
 exports.updateWatches = (req, res) => {

@@ -3,16 +3,31 @@ const Universe = require('../models/Universe');
 const writer = require("./library/writer");
 const viewer = require("./library/viewer");
 
-exports.addUniverses = (req, res, next) => {
+exports.addUniverses = (req, res) => {
 
-    let universes = req.body.sources;
-
-    universes.map(obj=> ({ ...obj, userId: req.params.userId }));
+    const universes = req.body.universes.map(obj=> ({ ...obj, userId: req.params.userId }));
 
     Universe.insertMany(universes, {ordered: false})
-        .then(() => res.status(201).json({ message : 'Universes created'}))
-        .catch((error) => res.status(400).json({ error }) );
-}
+        .then((result) => {
+            const insertedIds = result.map((object, index) => ({
+                index: index,
+                _id: object._id
+            }));
+            res.status(200).json({insertedIds});
+        })
+        .catch((error) => {
+                if (error.code === 11000) {
+                    const insertedIds  = error.result.result.insertedIds.filter(
+                        (element1) => error.writeErrors.filter(
+                            (element2) => element2.index === element1.index).length === 0);
+
+                    res.status(200).json({insertedIds});
+                } else {
+                    res.status(400).json(error);
+                }
+            }
+        );
+};
 
 exports.updateUniverses = (req, res) => {
     const filter = {
