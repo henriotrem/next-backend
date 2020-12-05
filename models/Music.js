@@ -3,10 +3,14 @@ const mongoosePaginate = require('mongoose-paginate');
 
 const musicSchema = mongoose.Schema({
     userId: {type: mongoose.ObjectId, ref: 'User', required: true},
-    sourceId: { type: mongoose.ObjectId, ref: 'Source', required: true },
+    originId: { type: mongoose.ObjectId, required: true },
     track: { type: String, required: true },
     artists: [{ type: String, required: true }],
-    geospatiality: [ { type: Number} ],
+    geospatiality: {
+        latitude: {type: Number},
+        longitude: {type: Number},
+        accuracy: {type: Number}
+    },
     temporality: { type: Number, required: true }
 }, {
     timestamps: { createdAt: true, updatedAt: false }
@@ -15,6 +19,6 @@ const musicSchema = mongoose.Schema({
 
 musicSchema.plugin(mongoosePaginate);
 musicSchema.index({userId:1, temporality: 1}, {unique: true});
-musicSchema.index({userId:1, sourceId:1, temporality: 1});
+musicSchema.index({userId:1, originId:1, temporality: 1});
 
 module.exports = mongoose.model('Music', musicSchema);
