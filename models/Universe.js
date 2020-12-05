@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const universeSchema = mongoose.Schema({
     key: { type: String, unique: true, index: true, required: true },
@@ -13,6 +14,10 @@ const universeSchema = mongoose.Schema({
     }],
     precision: { type: Number, required: true },
     limit: { type: Number, required: true }
-}, { timestamps: true });
+}, {
+    timestamps: { createdAt: true, updatedAt: false }
+});
+
+universeSchema.plugin(mongoosePaginate);
 
 module.exports = mongoose.model('Universe', universeSchema);

@@ -2,15 +2,26 @@ const Source = require('../models/Source');
 
 exports.addSources = (req, res) => {
 
-    const sources = req.body.sources.map(obj=> ({ ...obj, userId: req.params.userId }));
+    const sources = req.body.sources.map(obj=> ({ ...obj, userId: req.params.userId}));
 
     Source.insertMany(sources, {ordered: false})
         .then((result) => {
-            const insertedIds = result.map((object, index) => ({
-                index: index,
-                _id: object._id
-            }));
-            res.status(200).json({insertedIds});
+
+            if(req.query._response === 'none') {
+                res.status(200).send()
+            } else if(req.query._response === 'partial') {
+                const partial = result.map((object, index) => ({
+                    index: index,
+                    _id: object._doc._id
+                }));
+                res.status(200).json({sources: partial});
+            } else {
+                const full = result.map((object, index) => ({
+                    index: index,
+                    ...object._doc
+                }));
+                res.status(200).json({sources: full})
+            }
         })
         .catch((error) => {
                 if (error.code === 11000) {
@@ -18,7 +29,7 @@ exports.addSources = (req, res) => {
                         (element1) => error.writeErrors.filter(
                             (element2) => element2.index === element1.index).length === 0);
 
-                    res.status(200).json({insertedIds});
+                    res.status(200).json(insertedIds);
                 } else {
                     res.status(400).json(error);
                 }
@@ -26,129 +37,128 @@ exports.addSources = (req, res) => {
         );
 };
 
-exports.updateSources = (req, res) => {
+exports.updateSource = (req, res) => {
+
     const filter = {
-        userId:req.params.userId,
-        ...req.body.filter
+        '_id' :  req.params.sourceId
     };
     const set = {
-        ...req.body.set
+        ...req.body,
+        'userId': req.params.userId
     };
 
-    Source.update(filter, set, { multi: true })
-        .then((sources) => res.status(200).json({ sources: sources }))
+    Source.replaceOne(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.patchSource = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.sourceId
+    };
+    const set = {
+        $set: {
+            ...req.body,
+            'userId': req.params.userId,
+        }
+    };
+
+    Source.updateOne(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.patchSources = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId
+    };
+    const set = {
+        $set: {
+            ...req.body,
+            'userId': req.params.userId
+        }
+    };
+
+    Source.updateMany(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.deleteSource = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.sourceId
+    };
+
+    Source.deleteOne(filter)
+        .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
 exports.deleteSources = (req, res) => {
 
-    let filter = {
-        userId: req.params.userId
-    }
-    if ( req.query.ids ) {
-        filter._id = {
-            $in: req.query.ids.split(',')
-        }
-    }
-    if ( req.query.sourceId ) {
-        filter.sourceId = req.query.sourceId;
-    }
-    if ( req.query.start && req.query.end ) {
-        filter.temporality = {
-            $gte: req.query.start,
-            $lte: req.query.end
-        }
-    }
+    const filter = {
+        'userId': req.params.userId
+    };
 
     Source.deleteMany(filter)
-        .then(() => res.status(200))
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.getSource = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.sourceId
+    };
+
+    Source.findOne(filter)
+        .then((source) => res.status(200).json(source))
         .catch(error => res.status(400).json(error));
 };
 
 exports.getSources = (req, res) => {
 
-    let filter = {
-        userId: req.params.userId
-    }
-    if ( req.query.ids ) {
-        filter._id = {
-            $in: req.query.ids.split(',')
-        }
-    }
-    if ( req.query.sourceId ) {
-        filter.sourceId = req.query.sourceId;
-    }
-    if ( req.query.start && req.query.end ) {
-        filter.temporality = {
-            $gte: req.query.start,
-            $lte: req.query.end
-        }
-    }
-
-    Source.find(filter)
-        .then(sources => res.status(200).json(sources))
-        .catch(error => res.status(404).json(error));
-}
-
-exports.addApi = (req, res) => {
     const filter = {
-        '_id' : req.params.id,
         'userId': req.params.userId
     };
-    const set = {
-        '$set' :
-            {
-                api: req.body
-            }
+    const options = {
+        sort:     { createdAt: -1 },
+        offset:   req.query._offset ? parseInt(req.query._offset) : 0,
+        limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
-    Source.findOneAndUpdate(filter,set,{ new:true, useFindAndModify: false })
-        .then((source) => res.status(201).json(source))
+
+    Source.paginate(filter, options)
+        .then((result) => {
+            res.status(200);
+            res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
+            res.json({sources: result.docs})
+        })
         .catch(error => res.status(400).json(error));
 };
 
-exports.updateApi = (req, res) => {
-    const filter = {
-        '_id' : req.params.id,
-        'userId': req.params.userId
-    };
-    const set = {
-        $inc: {
-            "api.token": req.body.token
-        }
-    };
-    Source.updateOne(filter, set)
-        .then(() => res.status(200).json({ message: 'Api updated' }))
-        .catch(error => res.status(400).json(error));
-};
+exports.countSources = (req, res) => {
 
-exports.addFile = (req, res) => {
     const filter = {
-        '_id' : req.params.id,
         'userId': req.params.userId
     };
-    const set = {
-        '$set' :
-            {
-                file: req.body
-            }
+    const options = {
+        sort:     { createdAt: -1 },
+        offset:   req.query._offset ? parseInt(req.query._offset) : 0,
+        limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
-    Source.findOneAndUpdate(filter,set,{ new:true, useFindAndModify: false })
-        .then((source) => res.status(201).json(source))
-        .catch(error => res.status(400).json(error));
-};
 
-exports.updateFile = (req, res) => {
-    const filter = {
-        '_id' : req.params.id,
-        'userId': req.params.userId
-    };
-    const set = {
-        $inc: {
-            "file.processed": req.body.increment
-        }
-    };
-    Source.updateOne(filter, set)
-        .then(() => res.status(200).json({ message: 'File updated' }))
+    Source.paginate(filter, options)
+        .then((result) => {
+            res.status(200);
+            res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
+            res.send()
+        })
         .catch(error => res.status(400).json(error));
 };
 

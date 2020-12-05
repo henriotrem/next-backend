@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const photoSchema = mongoose.Schema({
     userId: {type: mongoose.ObjectId, ref: 'User', required: true},
@@ -19,9 +20,11 @@ const photoSchema = mongoose.Schema({
     },
     geospatiality: [ { type: Number} ],
     temporality: { type: Number, required: true }
-}, { timestamps: true });
+}, {
+    timestamps: { createdAt: true, updatedAt: false }
+});
 
-
+photoSchema.plugin(mongoosePaginate);
 photoSchema.index({userId:1, temporality: 1, filename: 1}, {unique: true});
 photoSchema.index({userId:1, sourceId:1, temporality: 1});
 

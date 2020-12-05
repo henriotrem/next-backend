@@ -4,7 +4,7 @@ const User = require('../models/User');
 
 const geospatiality = require("./library/dimensions/geospatiality");
 
-exports.createSegments = (req, res) => {
+exports.addSegments = (req, res) => {
 
     User.updateOne({'_id':req.params.userId}, { $set: { 'segments.inProgress' : true } } ).then(
         (result) => {
@@ -254,37 +254,164 @@ function saveSegment(userId, serieType, serie, serieTotalDistance, segment1, seg
     }
 }
 
+exports.addSegments = (req, res) => {
+
+    const segments = req.body.segments.map(obj=> ({ ...obj, userId: req.params.userId}));
+
+    Segment.insertMany(segments, {ordered: false})
+        .then((result) => {
+
+            if(req.query._response === 'none') {
+                res.status(200).send()
+            } else if(req.query._response === 'partial') {
+                const partial = result.map((object, index) => ({
+                    index: index,
+                    _id: object._doc._id
+                }));
+                res.status(200).json({segments: partial});
+            } else {
+                const full = result.map((object, index) => ({
+                    index: index,
+                    ...object._doc
+                }));
+                res.status(200).json({segments: full})
+            }
+        })
+        .catch((error) => {
+                if (error.code === 11000) {
+                    const insertedIds  = error.result.result.insertedIds.filter(
+                        (element1) => error.writeErrors.filter(
+                            (element2) => element2.index === element1.index).length === 0);
+
+                    res.status(200).json(insertedIds);
+                } else {
+                    res.status(400).json(error);
+                }
+            }
+        );
+};
+
+exports.updateSegment = (req, res) => {
+
+    const filter = {
+        '_id' :  req.params.segmentId
+    };
+    const set = {
+        ...req.body,
+        'userId': req.params.userId
+    };
+
+    Segment.replaceOne(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.patchSegment = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.segmentId
+    };
+    const set = {
+        $set: {
+            ...req.body,
+            'userId': req.params.userId,
+        }
+    };
+
+    Segment.updateOne(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.patchSegments = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId
+    };
+    const set = {
+        $set: {
+            ...req.body,
+            'userId': req.params.userId
+        }
+    };
+
+    Segment.updateMany(filter, set)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.deleteSegment = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.segmentId
+    };
+
+    Segment.deleteOne(filter)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.deleteSegments = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId
+    };
+
+    Segment.deleteMany(filter)
+        .then(() => res.status(200).send())
+        .catch(error => res.status(400).json(error));
+};
+
+exports.getSegment = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        '_id' : req.params.segmentId
+    };
+
+    Segment.findOne(filter)
+        .then((segment) => res.status(200).json(segment))
+        .catch(error => res.status(400).json(error));
+};
+
 exports.getSegments = (req, res) => {
 
-    let minTime = +req.query.start;
-    let maxTime = minTime + 3600*24;
-
-    const filter1 = {
-        'userId': req.params.userId,
-        'duration.start': {
-            '$lt': minTime
-        },
+    const filter = {
+        'userId': req.params.userId
+    };
+    const options = {
+        sort:     { createdAt: -1 },
+        offset:   req.query._offset ? parseInt(req.query._offset) : 0,
+        limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
 
-    const filter2 = {
-        'userId': req.params.userId,
-        'duration.start': {
-            '$gte': minTime,
-            '$lt': maxTime
-        },
+    Segment.paginate(filter, options)
+        .then((result) => {
+            res.status(200);
+            res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
+            res.json({segments: result.docs})
+        })
+        .catch(error => res.status(400).json(error));
+};
+
+exports.countSegments = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId
+    };
+    const options = {
+        sort:     { createdAt: -1 },
+        offset:   req.query._offset ? parseInt(req.query._offset) : 0,
+        limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
 
-    Segment.findOne(filter1).sort({'duration.start':-1}).then(
-        (segment) => {
-
-            Segment.find(filter2).sort({'duration.start': 1})
-                .then(
-                    (segments) => {
-
-                        segments.unshift(segment);
-                        res.status(200).json(segments);
-                    })
-                .catch(error => res.status(400).json({ error}));
-        }
-    ).catch(error => res.status(400).json({ error}));
-}
+    Segment.paginate(filter, options)
+        .then((result) => {
+            res.status(200);
+            res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
+            res.send()
+        })
+        .catch(error => res.status(400).json(error));
+};

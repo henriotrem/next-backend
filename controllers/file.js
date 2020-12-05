@@ -1,10 +1,10 @@
-const Website = require('../models/Website');
+const File = require('../models/File');
 
-exports.addWebsites = (req, res) => {
+exports.addFiles = (req, res) => {
 
-    const websites = req.body.websites.map(obj=> ({ ...obj, userId: req.params.userId}));
+    const files = req.body.files.map(obj=> ({ ...obj, userId: req.params.userId, sourceId: req.params.sourceId}));
 
-    Website.insertMany(websites, {ordered: false})
+    File.insertMany(files, {ordered: false})
         .then((result) => {
 
             if(req.query._response === 'none') {
@@ -14,13 +14,13 @@ exports.addWebsites = (req, res) => {
                     index: index,
                     _id: object._doc._id
                 }));
-                res.status(200).json({websites: partial});
+                res.status(200).json({files: partial});
             } else {
                 const full = result.map((object, index) => ({
                     index: index,
                     ...object._doc
                 }));
-                res.status(200).json({websites: full})
+                res.status(200).json({files: full})
             }
         })
         .catch((error) => {
@@ -37,95 +37,105 @@ exports.addWebsites = (req, res) => {
         );
 };
 
-exports.updateWebsite = (req, res) => {
+exports.updateFile = (req, res) => {
 
     const filter = {
-        '_id' :  req.params.websiteId
+        'sourceId' : req.params.sourceId,
+        '_id' :  req.params.fileId
     };
     const set = {
         ...req.body,
-        'userId': req.params.userId
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId
     };
 
-    Website.replaceOne(filter, set)
+    File.replaceOne(filter, set)
         .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
-exports.patchWebsite = (req, res) => {
+exports.patchFile = (req, res) => {
 
     const filter = {
         'userId': req.params.userId,
-        '_id' : req.params.websiteId
+        'sourceId' : req.params.sourceId,
+        '_id' : req.params.fileId
     };
     const set = {
         $set: {
             ...req.body,
             'userId': req.params.userId,
+            'sourceId' : req.params.sourceId
         }
     };
 
-    Website.updateOne(filter, set)
+    File.updateOne(filter, set)
         .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
-exports.patchWebsites = (req, res) => {
+exports.patchFiles = (req, res) => {
 
     const filter = {
-        'userId': req.params.userId
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId
     };
     const set = {
         $set: {
             ...req.body,
-            'userId': req.params.userId
+            'userId': req.params.userId,
+            'sourceId' : req.params.sourceId
         }
     };
 
-    Website.updateMany(filter, set)
+    File.updateMany(filter, set)
         .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
-exports.deleteWebsite = (req, res) => {
+exports.deleteFile = (req, res) => {
 
     const filter = {
         'userId': req.params.userId,
-        '_id' : req.params.websiteId
+        'sourceId' : req.params.sourceId,
+        '_id' : req.params.fileId
     };
 
-    Website.deleteOne(filter)
+    File.deleteOne(filter)
         .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
-exports.deleteWebsites = (req, res) => {
-
-    const filter = {
-        'userId': req.params.userId
-    };
-
-    Website.deleteMany(filter)
-        .then(() => res.status(200).send())
-        .catch(error => res.status(400).json(error));
-};
-
-exports.getWebsite = (req, res) => {
+exports.deleteFiles = (req, res) => {
 
     const filter = {
         'userId': req.params.userId,
-        '_id' : req.params.websiteId
+        'sourceId' : req.params.sourceId
     };
 
-    Website.findOne(filter)
-        .then((website) => res.status(200).json(website))
+    File.deleteMany(filter)
+        .then(() => res.status(200).send())
         .catch(error => res.status(400).json(error));
 };
 
-exports.getWebsites = (req, res) => {
+exports.getFile = (req, res) => {
 
     const filter = {
-        'userId': req.params.userId
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId,
+        '_id' : req.params.fileId
+    };
+
+    File.findOne(filter)
+        .then((file) => res.status(200).json(file))
+        .catch(error => res.status(400).json(error));
+};
+
+exports.getFiles = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId
     };
     const options = {
         sort:     { createdAt: -1 },
@@ -133,19 +143,20 @@ exports.getWebsites = (req, res) => {
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
 
-    Website.paginate(filter, options)
+    File.paginate(filter, options)
         .then((result) => {
             res.status(200);
             res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
-            res.json({websites: result.docs})
+            res.json({files: result.docs})
         })
         .catch(error => res.status(400).json(error));
 };
 
-exports.countWebsites = (req, res) => {
+exports.countFiles = (req, res) => {
 
     const filter = {
-        'userId': req.params.userId
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId
     };
     const options = {
         sort:     { createdAt: -1 },
@@ -153,7 +164,7 @@ exports.countWebsites = (req, res) => {
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
 
-    Website.paginate(filter, options)
+    File.paginate(filter, options)
         .then((result) => {
             res.status(200);
             res.setHeader('Content-Range', 'items ' + result.offset + '-' + Math.min((result.offset + result.limit), result.total) + '/' + result.total);
@@ -161,3 +172,23 @@ exports.countWebsites = (req, res) => {
         })
         .catch(error => res.status(400).json(error));
 };
+
+exports.patchFileProcessed = (req, res) => {
+    const filter = {
+        'userId': req.params.userId,
+        'sourceId' : req.params.sourceId,
+        '_id' : req.params.fileId
+    };
+    const set = {
+        $inc:{
+            'processed':req.body.increment
+        }
+    };
+    File.findOneAndUpdate(filter, set, { new:true, useFindAndModify: false })
+        .then((file) => {
+            res.status(200).json({processed: file.processed})
+        })
+        .catch(error => res.status(400).json(error));
+};
+
+

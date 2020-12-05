@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const segmentSchema = mongoose.Schema({
     userId: { type: mongoose.ObjectId, ref: 'User', required: true },
@@ -16,8 +17,11 @@ const segmentSchema = mongoose.Schema({
         longitude: { type: Number },
         timestamp: { type: Number}
     } ]
-}, { timestamps: true });
+}, {
+    timestamps: { createdAt: true, updatedAt: false }
+});
 
+segmentSchema.plugin(mongoosePaginate);
 segmentSchema.index({userId:1, 'duration.start': 1}, {unique: true});
 
 module.exports = mongoose.model('Segment', segmentSchema);

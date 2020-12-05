@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const mongoosePaginate = require('mongoose-paginate');
 
 const positionSchema = mongoose.Schema({
     userId: { type: mongoose.ObjectId, ref: 'User', required: true },
@@ -9,8 +10,11 @@ const positionSchema = mongoose.Schema({
         accuracy: {type: Number}
     },
     temporality: { type: Number}
-}, { timestamps: true });
+}, {
+    timestamps: { createdAt: true, updatedAt: false }
+});
 
+positionSchema.plugin(mongoosePaginate);
 positionSchema.index({userId:1, temporality: 1}, {unique: true});
 positionSchema.index({userId:1, sourceId:1, temporality: 1});
 positionSchema.index({userId:1, createdAt: 1});
