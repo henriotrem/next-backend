@@ -16,7 +16,7 @@ router.get('/google', (req, res) => {
         prompt: 'consent',
         failureFlash: true,  // Display errors to the user.
         session: true,
-        state:req.query.userId
+        state:req.query.origin
     })(req,res)
 });
 router.get('/google/callback',
@@ -33,7 +33,7 @@ router.get('/spotify', (req, res) => {
         prompt: 'consent',
         failureFlash: true,  // Display errors to the user.
         session: true,
-        state:req.query.userId
+        state:req.query.origin
     })(req,res)
 });
 router.get('/spotify/callback',

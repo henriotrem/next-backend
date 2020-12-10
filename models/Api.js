@@ -4,7 +4,7 @@ const mongoosePaginate = require('mongoose-paginate');
 const apiSchema = mongoose.Schema({
     userId: {type: mongoose.ObjectId, ref: 'User', required: true},
     sourceId: {type: mongoose.ObjectId, ref: 'Source', required: true},
-    email: { type: String, required:true },
+    email: { type: String },
     token: { type: String },
     refreshToken: { type: String },
     callback: { type: String },

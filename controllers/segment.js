@@ -254,43 +254,6 @@ function saveSegment(userId, serieType, serie, serieTotalDistance, segment1, seg
     }
 }
 
-exports.addSegments = (req, res) => {
-
-    const segments = req.body.segments.map(obj=> ({ ...obj, userId: req.params.userId}));
-
-    Segment.insertMany(segments, {ordered: false})
-        .then((result) => {
-
-            if(req.query._response === 'none') {
-                res.status(200).send()
-            } else if(req.query._response === 'partial') {
-                const partial = result.map((object, index) => ({
-                    index: index,
-                    _id: object._doc._id
-                }));
-                res.status(200).json({segments: partial});
-            } else {
-                const full = result.map((object, index) => ({
-                    index: index,
-                    ...object._doc
-                }));
-                res.status(200).json({segments: full})
-            }
-        })
-        .catch((error) => {
-                if (error.code === 11000) {
-                    const insertedIds  = error.result.result.insertedIds.filter(
-                        (element1) => error.writeErrors.filter(
-                            (element2) => element2.index === element1.index).length === 0);
-
-                    res.status(200).json(insertedIds);
-                } else {
-                    res.status(400).json(error);
-                }
-            }
-        );
-};
-
 exports.updateSegment = (req, res) => {
 
     const filter = {
@@ -381,8 +344,14 @@ exports.getSegments = (req, res) => {
     const filter = {
         'userId': req.params.userId
     };
+    if (req.query.start && req.query.end) {
+        filter['duration.start'] = {
+                $gte: req.query.start,
+                $lt: req.query.end
+            }
+    }
     const options = {
-        sort:     { createdAt: -1 },
+        sort:     { temporality: 1 },
         offset:   req.query._offset ? parseInt(req.query._offset) : 0,
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
@@ -401,8 +370,14 @@ exports.countSegments = (req, res) => {
     const filter = {
         'userId': req.params.userId
     };
+    if (req.query.start && req.query.end) {
+        filter['duration.start'] = {
+            $gte: req.query.start,
+            $lt: req.query.end
+        }
+    }
     const options = {
-        sort:     { createdAt: -1 },
+        sort:     { temporality: 1 },
         offset:   req.query._offset ? parseInt(req.query._offset) : 0,
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };

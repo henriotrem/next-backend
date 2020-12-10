@@ -2,22 +2,25 @@ const request = require('request-promise');
 const googleConfig = require('../configuration/google-config');
 const spotifyConfig = require('../configuration/spotify-config');
 
-const Source = require('../models/Source');
+const Api = require('../models/Api');
 
 exports.saveToken = (req, res) => {
 
-    Source.findOneAndUpdate(
-        { userId: req.query.state, name:'Spotify API' },
-        { '$set' :
-                {
-                    'api.email' : req.user.profile.emails[0].value,
-                    'api.token' : req.user.token,
-                    'api.refreshToken' : req.user.refreshToken
+    const origin = req.query.state.split('-');
+    const api = {
+        'userId' : origin[0],
+        'sourceId' : origin[1],
+        'email' : req.user.profile.emails[0].value,
+        'token' : req.user.token,
+        'refreshToken' : req.user.refreshToken
+    }
 
-                }
-        })
+    Api.create(api)
         .then(() => res.send('<script>window.close();</script >'))
-        .catch((reject=>console.log(reject)));
+        .catch((reject=> {
+            console.log(reject);
+            res.status(403).send();
+        }));
 }
 
 async function refreshToken(sourceId, config, refreshToken, cb) {
@@ -151,7 +154,7 @@ async function libraryGooglePhotoApiSearch(userId, authToken, parameters) {
 
 exports.getSpotifyTrack = (req, res) => {
 
-    Source.findOne({'userId': req.params.userId, 'name': 'Spotify API'}).then(
+    Api.findOne({userId: req.params.userId, _id: req.query.apiId}).then(
         (source) => {
             librarySpotifyApiSearch(req.query.track, req.query.artist, source.api.token).then((result) => {
 

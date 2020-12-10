@@ -127,8 +127,17 @@ exports.getPhotos = (req, res) => {
     const filter = {
         'userId': req.params.userId
     };
+    if (req.query.temporality) {
+        filter.temporality = req.query.temporality
+    }
+    if (req.query.start && req.query.end) {
+        filter.temporality = {
+            $gte: req.query.start,
+            $lt: req.query.end
+        }
+    }
     const options = {
-        sort:     { createdAt: -1 },
+        sort:     { temporality: 1 },
         offset:   req.query._offset ? parseInt(req.query._offset) : 0,
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
@@ -147,8 +156,17 @@ exports.countPhotos = (req, res) => {
     const filter = {
         'userId': req.params.userId
     };
+    if (req.query.temporality) {
+        filter.temporality = req.query.temporality
+    }
+    if (req.query.start && req.query.end) {
+        filter.temporality = {
+            $gte: req.query.start,
+            $lt: req.query.end
+        }
+    }
     const options = {
-        sort:     { createdAt: -1 },
+        sort:     { temporality: 1 },
         offset:   req.query._offset ? parseInt(req.query._offset) : 0,
         limit:    req.query._limit ? parseInt(req.query._limit) : 30
     };
