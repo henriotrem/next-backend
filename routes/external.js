@@ -23,7 +23,7 @@ router.get('/google/callback',
     passport.authenticate(
         'google', {failureRedirect: '/', failureFlash: true, session: true}),
     externalController.saveToken);
-router.get('/google/photos', auth, externalController.getGooglePhotos);
+router.get('/google/data', auth, externalController.getGooglePhotos);
 
 router.get('/spotify', (req, res) => {
 
@@ -40,6 +40,6 @@ router.get('/spotify/callback',
     passport.authenticate(
         'spotify', {failureRedirect: '/', failureFlash: true, session: true}),
     externalController.saveToken);
-router.get('/spotify/track', auth, externalController.getSpotifyTrack);
+router.get('/spotify/context', auth, externalController.getSpotifyTrack);
 
 module.exports = router;

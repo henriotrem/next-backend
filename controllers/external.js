@@ -2,6 +2,7 @@ const request = require('request-promise');
 const googleConfig = require('../configuration/google-config');
 const spotifyConfig = require('../configuration/spotify-config');
 
+const Source = require('../models/Source');
 const Api = require('../models/Api');
 
 exports.saveToken = (req, res) => {
@@ -23,7 +24,7 @@ exports.saveToken = (req, res) => {
         }));
 }
 
-async function refreshToken(sourceId, config, refreshToken, cb) {
+async function refreshToken(apiId, config, refreshToken, cb) {
 
     let forms = {
         client_id:config.oAuthClientID,
@@ -40,11 +41,11 @@ async function refreshToken(sourceId, config, refreshToken, cb) {
 
     console.log('New token : ' + result.access_token);
 
-    Source.findOneAndUpdate(
-        { _id: sourceId },
+    Api.findOneAndUpdate(
+        { _id: apiId },
         { '$set' :
                 {
-                    'api.token' : result.access_token,
+                    'token' : result.access_token,
                 }
         })
         .then(cb(result.access_token))
@@ -53,11 +54,11 @@ async function refreshToken(sourceId, config, refreshToken, cb) {
 
 exports.getGooglePhotos = (req, res) => {
 
-    Source.findOne({'userId': req.params.userId, 'name': 'Google Photo API'}).then(
-        (source) => {
+    Source.findOne({'userId': req.params.userId, 'provider': 'google'}).then((source) => {
+
+        Api.findOne({'userId': req.params.userId, 'sourceId': source._id}).then((api) => {
 
             let minTime = new Date(+req.query.start*1000);
-
             const filters = {contentFilter: {}, mediaTypeFilter: {mediaTypes: ['PHOTO']}};
 
             filters.dateFilter = {
@@ -75,25 +76,27 @@ exports.getGooglePhotos = (req, res) => {
                 }]
             };
 
-            libraryGooglePhotoApiSearch(req.params.userId, source.api.token, {filters}).then((result) => {
+            libraryGooglePhotoApiSearch(api.token, {filters}).then((result) => {
 
                 if(result.error && result.error.code === 401) {
 
-                    refreshToken(source._id, googleConfig, source.api.refreshToken, (token) => {
+                    refreshToken(api._id, googleConfig, api.refreshToken, (token) => {
 
-                        libraryGooglePhotoApiSearch(req.params.userId, token, {filters}).then((result) => {
+                        libraryGooglePhotoApiSearch(token, {filters}).then((result) => {
 
-                            res.status(200).json(result.photos);
+                            res.status(200).json({photos : result.photos});
                         });
                     });
                 } else {
-                    res.status(200).json(result.photos);
+
+                    res.status(200).json({photos : result.photos});
                 }
             });
         });
+    });
 }
 
-async function libraryGooglePhotoApiSearch(userId, authToken, parameters) {
+async function libraryGooglePhotoApiSearch(authToken, parameters) {
     let photos = [];
     let error = null;
 
@@ -105,7 +108,6 @@ async function libraryGooglePhotoApiSearch(userId, authToken, parameters) {
     try {
 
         do {
-
             result =
                 await request.post(googleConfig.photoApiEndpoint + '/v1/mediaItems:search', {
                     headers: {'Content-Type': 'application/json'},
@@ -124,7 +126,6 @@ async function libraryGooglePhotoApiSearch(userId, authToken, parameters) {
             for(let media of items) {
 
                 let photo = {
-                    userId: userId,
                     url: media.baseUrl,
                     filename: media.filename,
                     mimeType: media.mimeType,
@@ -154,15 +155,17 @@ async function libraryGooglePhotoApiSearch(userId, authToken, parameters) {
 
 exports.getSpotifyTrack = (req, res) => {
 
-    Api.findOne({userId: req.params.userId, _id: req.query.apiId}).then(
-        (source) => {
-            librarySpotifyApiSearch(req.query.track, req.query.artist, source.api.token).then((result) => {
+    Source.findOne({userId: req.params.userId, 'provider': 'spotify'}).then((source) => {
 
-                if(result.error && result.error.code === 401) {
+        Api.findOne({'userId': req.params.userId, 'sourceId': source._id}).then((api) => {
 
-                    refreshToken(source._id, spotifyConfig, source.api.refreshToken, (token) => {
+            librarySpotifyApiSearch(api.token, req.query.track, req.query.artist).then((result) => {
 
-                        librarySpotifyApiSearch(token).then((result) => {
+                if (result.error && result.error.code === 401) {
+
+                    refreshToken(api._id, spotifyConfig, api.refreshToken, (token) => {
+
+                        librarySpotifyApiSearch(api.token, req.query.track, req.query.artist).then((result) => {
 
                             res.status(200).json(result.tracks);
                         });
@@ -172,9 +175,10 @@ exports.getSpotifyTrack = (req, res) => {
                 }
             });
         });
+    });
 }
 
-async function librarySpotifyApiSearch(track, artist, authToken) {
+async function librarySpotifyApiSearch(authToken, track, artist) {
 
     let tracks = [];
     let error = null;
