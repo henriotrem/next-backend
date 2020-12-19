@@ -1,17 +1,27 @@
-const googleConfig = require('../configuration/google-config.js');
+const Provider = require('../models/Provider');
 
 const GoogleOAuthStrategy = require('passport-google-oauth20').Strategy;
 
 module.exports = (passport) => {
-  passport.serializeUser((user, done) => done(null, user));
-  passport.deserializeUser((user, done) => done(null, user));
-  passport.use(new GoogleOAuthStrategy(
-      {
-        clientID: googleConfig.oAuthClientID,
-        clientSecret: googleConfig.oAuthClientSecret,
-        callbackURL: googleConfig.oAuthCallbackUrl
-      },
-      (token, refreshToken, profile, done) => {
-          done(null, {profile, token, refreshToken})
-      }));
+
+    const filter = {
+        'name' : 'google'
+    };
+
+    Provider.findOne(filter).then((provider) => {
+
+        if(provider) {
+            const parameters = {
+                clientID: provider.clientId,
+                clientSecret: provider.clientSecret,
+                callbackURL: provider.callbackUrl
+            };
+            const strategy = new GoogleOAuthStrategy(parameters,
+                (token, refreshToken, profile, done) => done(null, {profile, token, refreshToken}));
+
+            passport.serializeUser((user, done) => done(null, user));
+            passport.deserializeUser((user, done) => done(null, user));
+            passport.use(strategy);
+        }
+    });
 };

@@ -6,9 +6,7 @@ const apiSchema = mongoose.Schema({
     sourceId: {type: mongoose.ObjectId, ref: 'Source', required: true},
     email: { type: String },
     token: { type: String },
-    refreshToken: { type: String },
-    callback: { type: String },
-    scopes: [{ type: String }]
+    refreshToken: { type: String }
 }, {
     timestamps: { createdAt: true, updatedAt: false }
 });

@@ -12,6 +12,7 @@ googleAuth(passport);
 spotifyAuth(passport);
 
 const authRoutes = require('./routes/auth');
+const providerRoutes = require('./routes/provider');
 const sourceRoutes = require('./routes/source');
 const externalRoutes = require('./routes/external');
 const positionRoutes = require('./routes/position');
@@ -45,6 +46,7 @@ app.use(bodyParser.json());
 app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use('/api/auth', authRoutes);
+app.use('/api/providers', providerRoutes);
 app.use('/api/sources', sourceRoutes);
 app.use('/api/external', externalRoutes);
 app.use('/api/positions', positionRoutes);

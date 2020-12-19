@@ -1,118 +1,78 @@
 const request = require('request-promise');
-const googleConfig = require('../configuration/google-config');
-const spotifyConfig = require('../configuration/spotify-config');
+
+const providerController = require('./provider');
 
 const Source = require('../models/Source');
 const Api = require('../models/Api');
 
-exports.saveToken = (req, res) => {
+exports.getData = (req, res) => {
 
-    const origin = req.query.state.split('-');
-    const api = {
-        'userId' : origin[0],
-        'sourceId' : origin[1],
-        'email' : req.user.profile.emails[0].value,
-        'token' : req.user.token,
-        'refreshToken' : req.user.refreshToken
-    }
+    const regex = new RegExp(req.params.type + '-api-data');
 
-    Api.create(api)
-        .then(() => res.send('<script>window.close();</script >'))
-        .catch((reject=> {
-            console.log(reject);
-            res.status(403).send();
-        }));
-}
+    Source.findOne({'userId': req.params.userId, 'type': {$regex : regex}}).then((source) => {
 
-async function refreshToken(apiId, config, refreshToken, cb) {
+        Api.findOne({'sourceId': source._id}).then((api) => {
 
-    let forms = {
-        client_id:config.oAuthClientID,
-        client_secret:config.oAuthClientSecret,
-        grant_type:'refresh_token',
-        refresh_token:refreshToken,
-    }
-
-    let result =
-        JSON.parse(await request.post(config.oAuthEnpoint + '/token', {
-            headers: {'Content-Type':'application/x-www-form-urlencoded'},
-            form: forms
-        }));
-
-    console.log('New token : ' + result.access_token);
-
-    Api.findOneAndUpdate(
-        { _id: apiId },
-        { '$set' :
-                {
-                    'token' : result.access_token,
-                }
-        })
-        .then(cb(result.access_token))
-        .catch((reject=>console.log(reject)));
-}
-
-exports.getGooglePhotos = (req, res) => {
-
-    Source.findOne({'userId': req.params.userId, 'provider': 'google'}).then((source) => {
-
-        Api.findOne({'userId': req.params.userId, 'sourceId': source._id}).then((api) => {
-
-            let minTime = new Date(+req.query.start*1000);
-            const filters = {contentFilter: {}, mediaTypeFilter: {mediaTypes: ['PHOTO']}};
-
-            filters.dateFilter = {
-                ranges: [{
-                    startDate: {
-                        'year': minTime.getUTCFullYear(),
-                        'month': minTime.getUTCMonth()+1,
-                        'day': minTime.getUTCDate()
-                    },
-                    endDate: {
-                        'year': minTime.getUTCFullYear(),
-                        'month': minTime.getUTCMonth()+1,
-                        'day': minTime.getUTCDate()
-                    }
-                }]
-            };
-
-            libraryGooglePhotoApiSearch(api.token, {filters}).then((result) => {
-
-                if(result.error && result.error.code === 401) {
-
-                    refreshToken(api._id, googleConfig, api.refreshToken, (token) => {
-
-                        libraryGooglePhotoApiSearch(token, {filters}).then((result) => {
-
-                            res.status(200).json({photos : result.photos});
-                        });
-                    });
-                } else {
-
-                    res.status(200).json({photos : result.photos});
-                }
-            });
+            if(source.name === 'google-photos-api') {
+                this.libraryGooglePhotoApiSearch(source, api, req).then(photos => res.status(200).json({photos}));
+            }
         });
     });
 }
 
-async function libraryGooglePhotoApiSearch(authToken, parameters) {
-    let photos = [];
-    let error = null;
+exports.getContext = (req, res) => {
 
-    parameters.pageSize = googleConfig.searchPageSize;
+    const regex = new RegExp(req.params.type + '-api-context');
 
-    let result = [];
-    let total = 0;
+    Source.findOne({userId: req.params.userId, 'type': {$regex : regex}}).then((source) => {
 
-    try {
+        Api.findOne({'sourceId': source._id}).then((api) => {
 
-        do {
-            result =
-                await request.post(googleConfig.photoApiEndpoint + '/v1/mediaItems:search', {
+            if(source.name === 'spotify-context-api') {
+                this.librarySpotifyApiSearch(source, api, req).then(tracks => res.status(200).json({tracks}));
+            } else if(source.name === 'google-places-api') {
+                this.libraryGooglePlacesApiSearch(source, api, req).then(locations => res.status(200).json({locations}));
+            }
+        });
+    });
+}
+
+exports.libraryGooglePhotoApiSearch = async (source, api, req) => {
+
+    let loop = true;
+    const photos = [];
+    const date = new Date(+req.query.start*1000);
+    const parameters = {
+        pageSize: 100,
+        filters: {
+            contentFilter: {},
+            mediaTypeFilter: {mediaTypes: ['PHOTO']},
+            dateFilter: {
+                ranges: [{
+                    startDate: {
+                        'year': date.getUTCFullYear(),
+                        'month': date.getUTCMonth() + 1,
+                        'day': date.getUTCDate()
+                    },
+                    endDate: {
+                        'year': date.getUTCFullYear(),
+                        'month': date.getUTCMonth() + 1,
+                        'day': date.getUTCDate()
+                    }
+                }]
+            }
+        }
+    };
+
+    do {
+
+        try {
+
+            const result =
+                await request.post(source.endpoint + '/v1/mediaItems:search', {
                     headers: {'Content-Type': 'application/json'},
                     json: parameters,
-                    auth: {'bearer': authToken},
+                    auth: {'bearer': api.token},
                 });
 
             const items = result && result.mediaItems ?
@@ -123,7 +83,7 @@ async function libraryGooglePhotoApiSearch(authToken, parameters) {
 
             parameters.pageToken = result.nextPageToken;
 
-            for(let media of items) {
+            for (let media of items) {
 
                 let photo = {
                     url: media.baseUrl,
@@ -134,69 +94,77 @@ async function libraryGooglePhotoApiSearch(authToken, parameters) {
                         height: media.mediaMetadata.height,
                         photo: media.mediaMetadata.photo
                     },
-                    temporality: (new Date(media.mediaMetadata.creationTime)).getTime()/1000
+                    temporality: (new Date(media.mediaMetadata.creationTime)).getTime() / 1000
                 };
 
                 photos.push(photo);
             }
+            loop = false;
+        } catch (e) {
 
-            total += items.length;
+            if (e.statusCode === 401) {
+                api.token = await providerController.refreshToken(source, api);
+            } else {
+                loop = false;
+            }
+        }
 
-        } while (result && result.mediaItems.length > 0 && parameters.pageToken != null);
+    } while (loop || parameters.pageToken != null);
 
-    } catch (err) {
-
-        error = err.error.error ||
-            {name: err.name, code: err.statusCode, message: err.message};
-    }
-
-    return {photos, parameters, error};
+    return photos;
 }
 
-exports.getSpotifyTrack = (req, res) => {
+exports.librarySpotifyApiSearch = async (source, api, req) => {
 
-    Source.findOne({userId: req.params.userId, 'provider': 'spotify'}).then((source) => {
+    let loop = true;
+    const tracks = [];
+    const query = 'q=track:' + encodeURI(req.query.track) + '%20artist:' + encodeURI(req.query.artist) + '&type=track';
 
-        Api.findOne({'userId': req.params.userId, 'sourceId': source._id}).then((api) => {
+    do {
 
-            librarySpotifyApiSearch(api.token, req.query.track, req.query.artist).then((result) => {
+        try {
 
-                if (result.error && result.error.code === 401) {
-
-                    refreshToken(api._id, spotifyConfig, api.refreshToken, (token) => {
-
-                        librarySpotifyApiSearch(api.token, req.query.track, req.query.artist).then((result) => {
-
-                            res.status(200).json(result.tracks);
-                        });
-                    });
-                } else {
-                    res.status(200).json(result.tracks);
-                }
-            });
-        });
-    });
-}
-
-async function librarySpotifyApiSearch(authToken, track, artist) {
-
-    let tracks = [];
-    let error = null;
-
-    try {
-        const query = 'q=track:' + encodeURI(track) +  '%20artist:' + encodeURI(artist) + '&type=track';
-
-        tracks =
-            JSON.parse(await request.get(spotifyConfig.apiEndpoint + '/search?' + query, {
+            const result = await request.get(source.endpoint + '/v1/search?' + query, {
                 headers: {'Content-Type': 'application/json'},
-                auth: {'bearer': authToken}
-            }));
-    } catch (err) {
+                auth: {'bearer': api.token}
+            })
+            const track = JSON.parse(result).tracks.items[0];
+            tracks.push(track);
+            loop = false;
 
-        error = err.error.error ||
-            {name: err.name, code: err.statusCode, message: err.message};
-    }
+        } catch(e) {
+            if (e.statusCode === 401) {
+                api.token = await providerController.refreshToken(source, api);
+            } else {
+                loop = false;
+            }
+        }
+    } while (loop);
 
-    return {tracks, error};
+    return tracks;
 }
 
+exports.libraryGooglePlacesApiSearch = async (source, api, req) => {
+
+    let loop = true;
+    const locations = [];
+
+    do {
+
+        try {
+            const query = 'location=' + req.query.location + '&radius=50&key=' + api.token;
+            const result = await request.get(source.endpoint + '/maps/api/place/nearbysearch/json?' + query, {
+                headers: {'Content-Type': 'application/json'}
+            })
+            const location = JSON.parse(result).results[0];
+
+            locations.push(location);
+            loop = false;
+
+        } catch(e) {
+            loop = false;
+        }
+    } while (loop && locations.length === 0);
+
+    return locations;
+}

@@ -1,18 +1,27 @@
-const spotifyConfig = require('../configuration/spotify-config.js');
+const Provider = require('../models/Provider');
 
 const SpotifyStrategy = require('passport-spotify').Strategy;
 
 module.exports = (passport) => {
-    passport.serializeUser((user, done) => done(null, user));
-    passport.deserializeUser((user, done) => done(null, user));
-    passport.use(
-        new SpotifyStrategy(
-            {
-                clientID: spotifyConfig.oAuthClientID,
-                clientSecret: spotifyConfig.oAuthClientSecret,
-                callbackURL: spotifyConfig.oAuthCallbackUrl,
-            },
-            (token, refreshToken, profile, done) => {
-                done(null, {profile, token, refreshToken})
-            }));
+
+    const filter = {
+        'name' : 'spotify'
+    };
+
+    Provider.findOne(filter).then((provider) => {
+
+        if(provider) {
+            const parameters = {
+                clientID: provider.clientId,
+                clientSecret: provider.clientSecret,
+                callbackURL: provider.callbackUrl
+            };
+            const strategy = new SpotifyStrategy(parameters,
+                (token, refreshToken, profile, done) => done(null, {profile, token, refreshToken}));
+
+            passport.serializeUser((user, done) => done(null, user));
+            passport.deserializeUser((user, done) => done(null, user));
+            passport.use(strategy);
+        }
+    });
 };
