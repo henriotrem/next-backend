@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const mongoosePaginate = require('mongoose-paginate');
 
 const universeSchema = mongoose.Schema({
+    userId: {type: mongoose.ObjectId, ref: 'User', required: true},
     key: { type: String, unique: true, index: true, required: true },
     description: { type: String, required: true },
     dimensions: [{

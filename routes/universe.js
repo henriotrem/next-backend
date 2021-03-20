@@ -8,6 +8,7 @@ router.post('/', auth, universeController.addUniverses);
 router.put('/', auth, universeController.updateUniverses);
 router.delete('/', auth, universeController.deleteUniverses);
 router.get('/', auth, universeController.getUniverses);
+router.get('/:key', auth, universeController.getUniverse);
 
 router.post('/:key/element', auth, universeController.addElement);
 router.get('/:key/indexes/:ids', auth, universeController.getIndexes);

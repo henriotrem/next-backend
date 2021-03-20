@@ -4,8 +4,8 @@ const mongoosePaginate = require('mongoose-paginate');
 const providerSchema = mongoose.Schema({
     label: { type: String, required: true },
     name: { type: String, required: true, unique: true },
-    endpoint: { type: String, required: true },
     description: { type: String},
+    endpoint: { type: String, required: true },
     clientSecret: { type: String },
     clientId: { type: String },
     callbackUrl: { type: String }

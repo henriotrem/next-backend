@@ -7,14 +7,17 @@ const Api = require('../models/Api');
 
 exports.getData = (req, res) => {
 
-    const regex = new RegExp(req.params.type + '-api-data');
+    Api.findOne({'userId': req.params.userId, '_id': req.query.apiId}).then((api) => {
 
-    Source.findOne({'userId': req.params.userId, 'type': {$regex : regex}}).then((source) => {
+        Source.findOne({'userId': req.params.userId, '_id': req.query.sourceId}).then((source) => {
 
-        Api.findOne({'sourceId': source._id}).then((api) => {
+            if (api && source) {
 
-            if(source.name === 'google-photos-api') {
-                this.libraryGooglePhotoApiSearch(source, api, req).then(photos => res.status(200).json({photos}));
+                if (source.name === 'google-photos-api') {
+                    this.libraryGooglePhotoApiSearch(source, api, req).then(photos => res.status(200).json({photos}));
+                }
+            } else {
+                res.status(400).send();
             }
         });
     });
@@ -22,16 +25,19 @@ exports.getData = (req, res) => {
 
 exports.getContext = (req, res) => {
 
-    const regex = new RegExp(req.params.type + '-api-context');
+    Api.findOne({'userId': req.params.userId, '_id': req.query.apiId}).then((api) => {
 
-    Source.findOne({userId: req.params.userId, 'type': {$regex : regex}}).then((source) => {
+        Source.findOne({'userId': req.params.userId, '_id': req.query.sourceId}).then((source) => {
 
-        Api.findOne({'sourceId': source._id}).then((api) => {
+            if (api && source) {
 
-            if(source.name === 'spotify-context-api') {
-                this.librarySpotifyApiSearch(source, api, req).then(tracks => res.status(200).json({tracks}));
-            } else if(source.name === 'google-places-api') {
-                this.libraryGooglePlacesApiSearch(source, api, req).then(locations => res.status(200).json({locations}));
+                if(source.name === 'spotify-context-api') {
+                    this.librarySpotifyApiSearch(source, api, req).then(tracks => res.status(200).json({tracks}));
+                } else if(source.name === 'google-places-api') {
+                    this.libraryGooglePlacesApiSearch(source, api, req).then(locations => res.status(200).json({locations}));
+                }
+            } else {
+                res.status(400).send();
             }
         });
     });
@@ -57,7 +63,7 @@ exports.libraryGooglePhotoApiSearch = async (source, api, req) => {
                     endDate: {
                         'year': date.getUTCFullYear(),
                         'month': date.getUTCMonth() + 1,
-                        'day': date.getUTCDate()
+                        'day': date.getUTCDate() + 1
                     }
                 }]
             }
@@ -128,8 +134,7 @@ exports.librarySpotifyApiSearch = async (source, api, req) => {
                 headers: {'Content-Type': 'application/json'},
                 auth: {'bearer': api.token}
             })
-            const track = JSON.parse(result).tracks.items[0];
-            tracks.push(track);
+            tracks.push(...JSON.parse(result).tracks.items);
             loop = false;
 
         } catch(e) {
@@ -156,9 +161,8 @@ exports.libraryGooglePlacesApiSearch = async (source, api, req) => {
             const result = await request.get(source.endpoint + '/maps/api/place/nearbysearch/json?' + query, {
                 headers: {'Content-Type': 'application/json'}
             })
-            const location = JSON.parse(result).results[0];
+            locations.push(...JSON.parse(result).results);
 
-            locations.push(location);
             loop = false;
 
         } catch(e) {

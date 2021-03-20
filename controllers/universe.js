@@ -59,6 +59,18 @@ exports.deleteUniverses = (req, res) => {
         .catch(error => res.status(400).json(error));
 };
 
+exports.getUniverse = (req, res) => {
+
+    const filter = {
+        'userId': req.params.userId,
+        'key' : req.params.key
+    };
+
+    Universe.findOne(filter)
+        .then((universe) => res.status(200).json(universe))
+        .catch(error => res.status(400).json(error));
+};
+
 exports.getUniverses = (req, res) => {
 
     let filter = {
@@ -71,7 +83,7 @@ exports.getUniverses = (req, res) => {
     }
 
     Universe.find(filter)
-        .then(websites => res.status(200).json(websites))
+        .then(universes => res.status(200).json({universes}))
         .catch(error => res.status(400).json(error));
 }
 
@@ -87,14 +99,14 @@ exports.addElement = (req, res) => {
 
 exports.getIndexes = (req, res) => {
 
-    viewer.indexes(req.params.key ,req.query.ids.split(','), (indexes) => {
+    viewer.indexes(req.params.key ,req.params.ids.split(','), (indexes) => {
             res.status(200).json(indexes);
         });
 }
 
 exports.getLists = (req, res) => {
 
-    viewer.lists(req.params.key ,req.query.ids.split(','), (lists) => {
+    viewer.lists(req.params.key ,req.params.ids.split(','), (lists) => {
         res.status(200).json(lists);
     });
 }

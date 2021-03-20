@@ -14,7 +14,7 @@ router.get('/:providerId', auth, providerController.getProvider);
 router.get('/', auth, providerController.getProviders);
 router.head('/', auth, providerController.countProviders);
 
-router.get('/:providerId/oauth', auth, providerController.authenticate);
+router.get('/:providerId/oauth2', providerController.authenticate);
 router.get('/:providerId/callback', providerController.saveToken);
 
 module.exports = router;
